@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 
 const makeHugeArray = () =>
   new Array(3000).fill(0).map((_, i) => ({
@@ -13,12 +13,18 @@ function blockCPU(ms = 120) {
   }
 }
 
-export default function HeavyComponent() {
-  const items = makeHugeArray(); 
+// export default function HeavyComponent() { //
+// Duplicated default exports will throw errors //
+export function HeavyComponent() {
+  // const items = makeHugeArray(); //
+  // Heavy operations should be cached //
+  const items = useMemo(() => makeHugeArray(), []);
 
   const [input, setInput] = useState("");
 
-  const derivedValue = items.map((i) => Math.random()).join("-"); 
+  // const derivedValue = items.map((i) => Math.random()).join("-"); //
+  // Heavy operations should be cached //
+  const derivedValue = useMemo(() => items.map(() => Math.random()).join("-"), [items]);
 
   useEffect(() => {
     blockCPU(150); 
@@ -94,7 +100,9 @@ export default function SlowStudentDashboard() {
     return result;
   };
   
-  const heavyData = expensiveCalculation(); 
+  // const heavyData = expensiveCalculation(); //
+  // Heavy operations should be cached //
+  const heavyData = useMemo(() => expensiveCalculation(), []);
 
   return (
     <div className="dashboard-container">
