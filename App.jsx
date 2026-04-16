@@ -7,26 +7,21 @@ const makeHugeArray = () =>
     text: "Item " + i + " " + new Array(100).fill("x").join(""),
   }));
 
-const worker = new Worker("worker.js");
-worker.postMessage(null);
-worker.onmessage = (e) => setHeavyData(e.data);
-
-function blockCPU(ms = 120) {
-  const start = performance.now();
-  while (performance.now() - start < ms) {
-    // busy loop
-  }
-}
-
 const Row = React.memo(({ index, style, data }) => {
   const row = data[index];
-  const computed = row.text.split("").reverse().join("");
+  const computed = useMemo(() => row.text.split("").reverse().join(""), [row.text]);
   return (
     <div style={style}>
       <strong>{row.id}</strong> – {computed.substring(0, 60)}
     </div>
   );
 });
+
+function expensiveCalculation() {
+  let result = 0;
+  for (let i = 0; i < 500000000; i++) result += Math.random();
+  return result;
+}
 
 // export default function HeavyComponent() { //
 // Duplicated default exports will throw errors //
@@ -72,15 +67,15 @@ export function HeavyComponent() {
 export default function SlowStudentDashboard() {
   const [inputValue, setInputValue] = useState('');
   const [count, setCount] = useState(0);
+  const [heavyData, setHeavyData] = useState(null);
+  
+  useEffect(() => {
+    const worker = new Worker("worker.js");
+    worker.postMessage(null);
+    worker.onmessage = (e) => setHeavyData(e.data);
 
-  const expensiveCalculation = () => {
-    console.log('Running expensive calculation...');
-    let result = 0;
-    for (let i = 0; i < 500000000; i++) {
-      result += Math.random();
-    }
-    return result;
-  };
+    return () => worker.terminate(); // cleanup on unmount
+  }, []);
   
   // const heavyData = expensiveCalculation(); //
   // Heavy operations should be cached //
@@ -112,7 +107,7 @@ export default function SlowStudentDashboard() {
           placeholder="Type here to feel the lag..." 
         />
         
-        <button onClick={() => setCount(count + 1)}>
+        <button onClick={() => setCount(prev => prev + 1)}>
           Re-render App (Count: {count})
         </button>
       </div>
