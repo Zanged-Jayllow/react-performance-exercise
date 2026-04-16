@@ -6,6 +6,10 @@ const makeHugeArray = () =>
     text: "Item " + i + " " + new Array(100).fill("x").join(""),
   }));
 
+const worker = new Worker("worker.js");
+worker.postMessage(null);
+worker.onmessage = (e) => setHeavyData(e.data);
+
 function blockCPU(ms = 120) {
   const start = performance.now();
   while (performance.now() - start < ms) {
@@ -26,9 +30,9 @@ export function HeavyComponent() {
   // Heavy operations should be cached //
   const derivedValue = useMemo(() => items.map(() => Math.random()).join("-"), [items]);
 
-  useEffect(() => {
-    blockCPU(150); 
-  }, [items]); 
+  // No need to block CPU in useEffect anymore //
+  // Seems that no other logic depends on an useEffect? //
+  // since we useMemo on item //
 
   return (
     <div style={{ border: "2px solid red", padding: 16, marginTop: 32 }}>
@@ -39,10 +43,7 @@ export function HeavyComponent() {
 
       <input
         value={input}
-        onChange={(e) => {
-          blockCPU(80); // ❌ heavy validation
-          setInput(e.target.value);
-        }}
+        onChange={(e) => setInput(e.target.value)}
         placeholder="Type here (will lag!)"
       />
 
@@ -103,6 +104,10 @@ export default function SlowStudentDashboard() {
   // const heavyData = expensiveCalculation(); //
   // Heavy operations should be cached //
   const heavyData = useMemo(() => expensiveCalculation(), []);
+  
+  // Move the unstable porp input outside and useMemo and useCallback //
+  const config = useMemo(() => ({ theme: 'dark', value: heavyData }), [heavyData]);
+  const handleUpdate = useCallback(() => console.log('Chart updated'), []);
 
   return (
     <div className="dashboard-container">
@@ -129,10 +134,7 @@ export default function SlowStudentDashboard() {
       </div>
 
       <div className="analytics">
-        <HeavyAnalyticsChart 
-          config={{ theme: 'dark', value: heavyData }} 
-          onUpdate={() => console.log('Chart updated')} 
-        />
+		<HeavyAnalyticsChart config={config} onUpdate={handleUpdate} />
       </div>
     </div>
   );
