@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { FixedSizeList as List } from "react-window";
 
 const makeHugeArray = () =>
   new Array(3000).fill(0).map((_, i) => ({
@@ -16,6 +17,16 @@ function blockCPU(ms = 120) {
     // busy loop
   }
 }
+
+const Row = React.memo(({ index, style, data }) => {
+  const row = data[index];
+  const computed = row.text.split("").reverse().join("");
+  return (
+    <div style={style}>
+      <strong>{row.id}</strong> – {computed.substring(0, 60)}
+    </div>
+  );
+});
 
 // export default function HeavyComponent() { //
 // Duplicated default exports will throw errors //
@@ -47,39 +58,9 @@ export function HeavyComponent() {
         placeholder="Type here (will lag!)"
       />
 
-      <div style={{ height: 300, overflowY: "scroll", border: "1px solid #ccc", marginTop: 16 }}>
-        {items.map((row, i) => {
-          const computed = row.text
-            .split("")
-            .reverse()
-            .join(""); 
-
-          return (
-            <div
-              key={i}
-              style={{
-                padding: 8,
-                borderBottom: "1px solid #eee",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <div>
-                <strong>{row.id}</strong> – {computed.substring(0, 60)}
-              </div>
-
-              <button
-                onClick={() => {
-                  blockCPU(200); // ❌ long main thread block
-                  alert("Blocked UI thread for 200ms!");
-                }}
-              >
-                Slow Btn
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <List height={300} itemCount={items.length} itemSize={40} itemData={items}>
+        {Row}
+      </List>
 
       <p style={{ marginTop: 16 }}>
         Derived: <strong>{derivedValue.slice(0, 100)}</strong>
@@ -113,10 +94,13 @@ export default function SlowStudentDashboard() {
     <div className="dashboard-container">
       <h1>Performance Audit Dashboard</h1>
       <div className="hero-section">
-        <img 
-          src="https://via.placeholder.com/1200x600.png" 
-          alt="Large Hero Asset" 
-        />
+        <img
+		  src="/hero.webp"
+		  alt="Large Hero Asset"
+		  width={1200}
+		  height={600}
+		  loading="eager"
+		/>
       </div>
 
       <div className="controls">
